@@ -1,1196 +1,461 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive CX & Operations Performance Dashboard</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for Visualizations (Fixed CDN) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.min.js"></script>
-    <!-- SheetJS for processing Excel files (Fixed CDN) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        navy: {
-                            800: '#1E293B',
-                            900: '#0F172A',
-                            950: '#0B0F19'
-                        },
-                        tealBrand: '#0EA5E9',
-                        amberBrand: '#F59E0B',
-                        emeraldBrand: '#10B981',
-                        roseBrand: '#EF4444'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        /* Custom Styling for BI Aesthetics */
-        body {
-            background-color: #0F172A;
-            color: #F8FAFC;
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Glassmorphism Cards */
-        .bi-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-            transition: all 0.25s ease-in-out;
-        }
-        .bi-card:hover {
-            border-color: rgba(14, 165, 233, 0.3);
-            box-shadow: 0 12px 30px -5px rgba(14, 165, 233, 0.15);
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0F172A;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #0EA5E9;
-        }
-
-        /* Active Filter Pill */
-        .pill-active {
-            background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
-            color: #FFFFFF;
-            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
-        }
-
-        .pill-inactive {
-            background: #1E293B;
-            color: #94A3B8;
-            border: 1px solid #334155;
-        }
-        .pill-inactive:hover {
-            background: #334155;
-            color: #F8FAFC;
-        }
-
-        /* Data Heatmap Table Cell Styling */
-        .metric-badge-green { background-color: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .metric-badge-red { background-color: rgba(239, 68, 68, 0.15); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .metric-badge-amber { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CX & Operations Performance Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS (xlsx reader) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
+  </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="p-6">
 
-    <!-- Header Navigation -->
-    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3 mb-6">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <!-- Title & Metadata -->
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-gradient-to-tr from-sky-500 to-teal-400 rounded-xl shadow-lg shadow-sky-500/20 text-white">
-                    <i class="fa-solid fa-chart-line text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        CX & Operations Performance Dashboard
-                        <span id="data-status-badge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            <i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i> Loaded: 25082026.xlsx
-                        </span>
-                    </h1>
-                    <p class="text-xs text-slate-400">Live Executive Insights • FRT & FuRT SLA Benchmarks • CSAT Analysis</p>
-                </div>
-            </div>
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-700 pb-4">
+    <div>
+      <h1 class="text-2xl font-bold text-sky-400">CX & Operations Performance Dashboard</h1>
+      <p class="text-slate-400 text-sm">Real-time daily, weekly, and monthly CX operational metrics</p>
+    </div>
+    
+    <!-- Controls -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- File Upload -->
+      <label class="bg-sky-600 hover:bg-sky-500 text-white font-medium px-4 py-2 rounded-lg cursor-pointer text-sm transition">
+        📁 Upload Excel / CSV
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" multiple>
+      </label>
 
-            <!-- Granularity Switcher & Excel Uploader -->
-            <div class="flex flex-wrap items-center gap-3">
-                <!-- Time Granularity Switcher -->
-                <div class="bg-slate-800 p-1 rounded-xl border border-slate-700 flex items-center shadow-inner">
-                    <button onclick="setTimeGranularity('daily')" id="btn-gran-daily" class="px-3 py-1.5 text-xs font-semibold rounded-lg pill-active transition-all">
-                        <i class="fa-regular fa-calendar-day mr-1"></i> Daily
-                    </button>
-                    <button onclick="setTimeGranularity('weekly')" id="btn-gran-weekly" class="px-3 py-1.5 text-xs font-semibold rounded-lg pill-inactive transition-all">
-                        <i class="fa-solid fa-calendar-week mr-1"></i> Weekly
-                    </button>
-                    <button onclick="setTimeGranularity('monthly')" id="btn-gran-monthly" class="px-3 py-1.5 text-xs font-semibold rounded-lg pill-inactive transition-all">
-                        <i class="fa-regular fa-calendar-days mr-1"></i> Monthly
-                    </button>
-                </div>
+      <!-- Time View Slicer -->
+      <div class="bg-slate-800 p-1 rounded-lg flex border border-slate-700 text-sm">
+        <button id="btnDaily" onclick="setGranularity('daily')" class="px-3 py-1 rounded-md text-slate-300 font-medium">Daily</button>
+        <button id="btnWeekly" onclick="setGranularity('weekly')" class="px-3 py-1 rounded-md text-slate-300 font-medium">Weekly</button>
+        <button id="btnMonthly" onclick="setGranularity('monthly')" class="px-3 py-1 rounded-md text-slate-300 font-medium">Monthly</button>
+      </div>
 
-                <!-- Excel Uploader Button -->
-                <label class="cursor-pointer px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 text-xs font-semibold rounded-xl border border-sky-500/30 transition flex items-center gap-2 shadow-sm">
-                    <i class="fa-solid fa-file-excel"></i>
-                    <span>Upload Workbook</span>
-                    <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden" onchange="handleExcelUpload(event)">
-                </label>
+      <!-- Manage Stored Data Modal Toggle -->
+      <button onclick="toggleDataModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg text-sm transition">
+        ⚙️ Manage Stored Data
+      </button>
+    </div>
+  </div>
 
-                <!-- Export Report Button -->
-                <button onclick="exportDashboardSummary()" class="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-sky-600/30 flex items-center gap-2">
-                    <i class="fa-solid fa-download"></i>
-                    <span>Export BI Summary</span>
-                </button>
-            </div>
-        </div>
-    </header>
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+      <div class="text-xs font-semibold text-slate-400 uppercase">Total Handled Volume</div>
+      <div id="kpiVolume" class="text-2xl font-bold text-sky-400 mt-2">0</div>
+      <div class="text-xs text-slate-500 mt-1">Total Handled Cases</div>
+    </div>
 
-    <!-- Main Dashboard Container -->
-    <main class="max-w-7xl mx-auto px-4 lg:px-8 space-y-6">
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+      <div class="text-xs font-semibold text-slate-400 uppercase">Ticket Creation %</div>
+      <div id="kpiTicketPct" class="text-2xl font-bold text-white mt-2">0.0%</div>
+      <div class="text-xs text-slate-400 mt-1">Target: <span class="text-emerald-400 font-medium">&lt; 10%</span></div>
+    </div>
 
-        <!-- Global Filters Panel -->
-        <section class="bi-card rounded-2xl p-4">
-            <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    <i class="fa-solid fa-filter text-sky-400"></i> Global Dashboard Filters
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="resetAllFilters()" class="text-xs text-sky-400 hover:text-sky-300 transition flex items-center gap-1 font-medium">
-                        <i class="fa-solid fa-rotate-left"></i> Reset Filters
-                    </button>
-                </div>
-            </div>
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+      <div class="text-xs font-semibold text-slate-400 uppercase">Avg FRT</div>
+      <div id="kpiFRT" class="text-2xl font-bold text-white mt-2">0s</div>
+      <div class="text-xs text-slate-400 mt-1">Target: <span class="text-emerald-400 font-medium">&lt; 90s</span></div>
+    </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                <!-- Agency Filter -->
-                <div>
-                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Agency</label>
-                    <select id="filter-agency" onchange="applyFilters()" class="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none">
-                        <option value="ALL">All Agencies</option>
-                    </select>
-                </div>
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+      <div class="text-xs font-semibold text-slate-400 uppercase">Avg FuRT</div>
+      <div id="kpiFuRT" class="text-2xl font-bold text-white mt-2">0.0m</div>
+      <div class="text-xs text-slate-400 mt-1">Target: <span class="text-emerald-400 font-medium">&lt; 17.5m</span></div>
+    </div>
 
-                <!-- LiveChat Menu Filter -->
-                <div>
-                    <label class="block text-[11px] font-medium text-slate-400 mb-1">LiveChat Menu / Category</label>
-                    <select id="filter-menu" onchange="applyFilters()" class="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none">
-                        <option value="ALL">All Categories</option>
-                    </select>
-                </div>
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-md">
+      <div class="text-xs font-semibold text-slate-400 uppercase">CSAT Score</div>
+      <div id="kpiCSAT" class="text-2xl font-bold text-white mt-2">0.0%</div>
+      <div class="text-xs text-slate-400 mt-1">Target: <span class="text-emerald-400 font-medium">&gt; 85%</span></div>
+    </div>
+  </div>
 
-                <!-- VIP User Filter -->
-                <div>
-                    <label class="block text-[11px] font-medium text-slate-400 mb-1">VIP User Status</label>
-                    <select id="filter-vip" onchange="applyFilters()" class="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none">
-                        <option value="ALL">All Users</option>
-                        <option value="Yes">VIP Only</option>
-                        <option value="No">Non-VIP</option>
-                    </select>
-                </div>
+  <!-- Dashboard Charts Row 1 -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <h3 class="text-md font-semibold text-slate-200 mb-3">Volume Trend & Ticket Creation %</h3>
+      <div class="h-64"><canvas id="volumeChart"></canvas></div>
+    </div>
 
-                <!-- Agent Name Filter -->
-                <div>
-                    <label class="block text-[11px] font-medium text-slate-400 mb-1">Agent Name</label>
-                    <select id="filter-agent" onchange="applyFilters()" class="w-full bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs p-2 focus:ring-2 focus:ring-sky-500 focus:outline-none">
-                        <option value="ALL">All Agents</option>
-                    </select>
-                </div>
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <h3 class="text-md font-semibold text-slate-200 mb-3">Response SLA Trends (FRT vs FuRT)</h3>
+      <div class="h-64"><canvas id="slaChart"></canvas></div>
+    </div>
+  </div>
 
-                <!-- Active Filter Indicator Bar -->
-                <div class="flex flex-col justify-end">
-                    <div id="active-filter-summary" class="bg-slate-900/60 border border-slate-800 rounded-lg p-2 text-[11px] text-slate-400 truncate">
-                        <span class="text-sky-400 font-semibold">Active:</span> Showing all data
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Dashboard Charts Row 2 -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <h3 class="text-md font-semibold text-slate-200 mb-3">CSAT Resolution Breakdown</h3>
+      <div class="h-64 flex justify-center"><canvas id="csatChart"></canvas></div>
+    </div>
 
-        <!-- ROW 1: Key Performance Indicator (KPI) Summary Cards -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="lg:col-span-2 bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <h3 class="text-md font-semibold text-slate-200 mb-3">Volume by Issue Category</h3>
+      <div class="h-64"><canvas id="categoryChart"></canvas></div>
+    </div>
+  </div>
 
-            <!-- KPI 1: Total Handled Volume -->
-            <div class="bi-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 text-sky-500/5 text-7xl font-bold group-hover:text-sky-500/10 transition">
-                    <i class="fa-solid fa-headset"></i>
-                </div>
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-medium text-slate-400">Total Handled Volume</span>
-                        <span class="p-1.5 bg-sky-500/10 text-sky-400 rounded-lg text-xs"><i class="fa-solid fa-comments"></i></span>
-                    </div>
-                    <div id="kpi-volume-val" class="text-2xl font-extrabold text-white mb-1">--</div>
-                </div>
-                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-                    <span id="kpi-volume-diff" class="font-medium text-emerald-400 flex items-center gap-1">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +0%
-                    </span>
-                    <span class="text-slate-500">vs prior period</span>
-                </div>
-            </div>
+  <!-- Data Management Modal -->
+  <div id="dataModal" class="fixed inset-0 bg-black/70 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-xl w-full p-6 shadow-xl">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+        <h3 class="text-lg font-bold text-sky-400">Stored Days Data Manager</h3>
+        <button onclick="toggleDataModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
 
-            <!-- KPI 2: Ticket Creation % -->
-            <div class="bi-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 text-amber-500/5 text-7xl font-bold group-hover:text-amber-500/10 transition">
-                    <i class="fa-solid fa-ticket"></i>
-                </div>
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-medium text-slate-400">Ticket Creation %</span>
-                        <span id="kpi-ticket-status-icon" class="p-1.5 rounded-lg text-xs">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                        </span>
-                    </div>
-                    <div id="kpi-ticket-val" class="text-2xl font-extrabold text-white mb-1">--%</div>
-                </div>
-                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-                    <span id="kpi-ticket-badge" class="px-2 py-0.5 rounded-full font-semibold text-[10px]">
-                        Target: &lt;10%
-                    </span>
-                    <span id="kpi-ticket-created-count" class="text-slate-400 font-medium">0 Tickets</span>
-                </div>
-            </div>
+      <div class="max-h-60 overflow-y-auto mb-4">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-900 text-slate-400 uppercase text-xs sticky top-0">
+            <tr>
+              <th class="p-2">Date</th>
+              <th class="p-2">Records Count</th>
+              <th class="p-2 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="daysTableBody" class="divide-y divide-slate-700">
+            <!-- Dynamic Date Rows -->
+          </tbody>
+        </table>
+      </div>
 
-            <!-- KPI 3: Avg FRT (First Response Time) -->
-            <div class="bi-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 text-amber-500/5 text-7xl font-bold group-hover:text-amber-500/10 transition">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-medium text-slate-400">Avg FRT (First Response)</span>
-                        <span class="p-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-xs"><i class="fa-solid fa-stopwatch"></i></span>
-                    </div>
-                    <div id="kpi-frt-val" class="text-2xl font-extrabold text-amber-400 mb-1">-- sec</div>
-                </div>
-                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-                    <span id="kpi-frt-sla" class="font-medium text-emerald-400">SLA: 0%</span>
-                    <span class="text-slate-500">Target &lt;90s</span>
-                </div>
-            </div>
+      <div class="flex justify-between items-center pt-2">
+        <button onclick="clearAllData()" class="bg-red-600/80 hover:bg-red-600 text-white text-xs px-3 py-2 rounded transition">
+          ⚠️ Delete All Stored Data
+        </button>
+        <button onclick="toggleDataModal()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-4 py-2 rounded transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
-            <!-- KPI 4: Avg FuRT (Full Resolution Time) -->
-            <div class="bi-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 text-purple-500/5 text-7xl font-bold group-hover:text-purple-500/10 transition">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                </div>
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-medium text-slate-400">Avg FuRT / Duration</span>
-                        <span class="p-1.5 bg-purple-500/10 text-purple-400 rounded-lg text-xs"><i class="fa-solid fa-hourglass-half"></i></span>
-                    </div>
-                    <div id="kpi-furt-val" class="text-2xl font-extrabold text-purple-400 mb-1">-- min</div>
-                </div>
-                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-                    <span id="kpi-furt-breach" class="text-rose-400 font-medium">0 Breached</span>
-                    <span class="text-slate-500">Target &lt;17.5m</span>
-                </div>
-            </div>
+  <!-- JavaScript Application Logic -->
+  <script>
+    // --- IndexedDB Local Database Setup ---
+    let db;
+    const dbReq = indexedDB.open("CX_Dashboard_DB", 1);
 
-            <!-- KPI 5: CSAT Score -->
-            <div class="bi-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 text-emerald-500/5 text-7xl font-bold group-hover:text-emerald-500/10 transition">
-                    <i class="fa-solid fa-face-smile"></i>
-                </div>
-                <div>
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-medium text-slate-400">CSAT Score</span>
-                        <span class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs"><i class="fa-solid fa-thumbs-up"></i></span>
-                    </div>
-                    <div id="kpi-csat-val" class="text-2xl font-extrabold text-emerald-400 mb-1">--%</div>
-                </div>
-                <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800">
-                    <span id="kpi-csat-count" class="text-slate-300 font-medium">0 Surveys</span>
-                    <span class="text-slate-500">Target &gt;85%</span>
-                </div>
-            </div>
+    dbReq.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains("records")) {
+        const store = db.createObjectStore("records", { keyPath: "id", autoIncrement: true });
+        store.createIndex("date", "date", { unique: false });
+      }
+    };
 
-        </section>
+    dbReq.onsuccess = (e) => {
+      db = e.target.result;
+      refreshDashboard();
+    };
 
-        <!-- ROW 2: Volume & Ticket Trends (Time Series Analysis) -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    let currentGranularity = 'daily';
 
-            <!-- Visual 1: Volume & Ticket Creation % Combo Trend Chart -->
-            <div class="bi-card rounded-2xl p-5 lg:col-span-2 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-chart-column text-sky-400"></i> Total Handled Volume vs Ticket Creation %
-                        </h3>
-                        <p class="text-xs text-slate-400">Time-series distribution across selected granularity</p>
-                    </div>
-                    <span class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-sky-400">
-                        Target &lt; 10%
-                    </span>
-                </div>
-                <div class="relative flex-1 min-h-[300px]">
-                    <canvas id="chart-volume-trend"></canvas>
-                </div>
-            </div>
+    function setGranularity(type) {
+      currentGranularity = type;
+      ['btnDaily', 'btnWeekly', 'btnMonthly'].forEach(id => {
+        document.getElementById(id).classList.remove('bg-sky-600', 'text-white');
+        document.getElementById(id).classList.add('text-slate-300');
+      });
+      const activeBtn = type === 'daily' ? 'btnDaily' : type === 'weekly' ? 'btnWeekly' : 'btnMonthly';
+      document.getElementById(activeBtn).classList.add('bg-sky-600', 'text-white');
+      refreshDashboard();
+    }
 
-            <!-- Visual 2: Breakdown by LiveChat Menu / Category -->
-            <div class="bi-card rounded-2xl p-5 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-layer-group text-teal-400"></i> Volume by Issue Menu
-                        </h3>
-                        <p class="text-xs text-slate-400">Handled Cases vs Created Tickets</p>
-                    </div>
-                </div>
-                <div class="relative flex-1 min-h-[300px]">
-                    <canvas id="chart-menu-breakdown"></canvas>
-                </div>
-            </div>
+    // --- File Upload & Parser ---
+    document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 
-        </section>
+    async function handleFileUpload(e) {
+      const files = e.target.files;
+      if (!files.length) return;
 
-        <!-- ROW 3: Response & Resolution Time Analysis (FRT & FuRT) -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      for (let file of files) {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
 
-            <!-- Visual 3: Dual-Axis Line Chart (Avg FRT vs Avg FuRT) -->
-            <div class="bi-card rounded-2xl p-5 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-clock text-amber-400"></i> FRT vs FuRT Trend
-                        </h3>
-                        <p class="text-xs text-slate-400">First Response (sec) vs Full Resolution (min)</p>
-                    </div>
-                </div>
-                <div class="relative flex-1 min-h-[300px]">
-                    <canvas id="chart-frt-furt-trend"></canvas>
-                </div>
-            </div>
+        const records = [];
+        workbook.SheetNames.forEach(sheetName => {
+          const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+          if (rawData.length < 3) return;
 
-            <!-- Visual 4: Agent & Agency Performance Matrix -->
-            <div class="bi-card rounded-2xl p-5 lg:col-span-2 flex flex-col">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-users-gear text-sky-400"></i> Agent & Agency Performance Matrix
-                        </h3>
-                        <p class="text-xs text-slate-400">Heatmap operational breakdown with SLA compliance</p>
-                    </div>
-                    <!-- Search Agent Box -->
-                    <div class="relative">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-                        <input type="text" id="table-search" onkeyup="renderAgentTable()" placeholder="Search agent or agency..." 
-                               class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs pl-8 pr-3 py-1.5 focus:ring-1 focus:ring-sky-500 focus:outline-none w-48">
-                    </div>
-                </div>
+          // Headers are typically at row index 2 in provided structure
+          const headers = rawData[2] || rawData[1] || rawData[0];
+          
+          for (let i = 3; i < rawData.length; i++) {
+            const row = rawData[i];
+            if (!row || row.length === 0) continue;
 
-                <!-- Matrix Table -->
-                <div class="overflow-x-auto flex-1 max-h-[310px] rounded-xl border border-slate-800">
-                    <table class="w-full text-left text-xs text-slate-300">
-                        <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-800">
-                            <tr>
-                                <th class="p-3">Agent Name</th>
-                                <th class="p-3">Agency</th>
-                                <th class="p-3 text-right">Cases</th>
-                                <th class="p-3 text-right">Avg FRT (s)</th>
-                                <th class="p-3 text-right">Avg FuRT (m)</th>
-                                <th class="p-3 text-right">CSAT %</th>
-                                <th class="p-3 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="agent-matrix-body" class="divide-y divide-slate-800/60">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            const record = {};
+            headers.forEach((h, idx) => { if (h) record[h.trim()] = row[idx]; });
 
-        </section>
-
-        <!-- ROW 4: CSAT & Quality Insights -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <!-- Visual 5: CSAT Response Breakdown (Donut) -->
-            <div class="bi-card rounded-2xl p-5 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-chart-pie text-emerald-400"></i> CSAT Resolution Split
-                        </h3>
-                        <p class="text-xs text-slate-400">Resolved to Customer Satisfaction?</p>
-                    </div>
-                </div>
-                <div class="relative flex-1 min-h-[260px] flex items-center justify-center">
-                    <canvas id="chart-csat-donut"></canvas>
-                </div>
-            </div>
-
-            <!-- Visual 6: CSAT % Aggregated by Agency & Category -->
-            <div class="bi-card rounded-2xl p-5 lg:col-span-2 flex flex-col">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-building-user text-purple-400"></i> CSAT Score % by Agency & Category
-                        </h3>
-                        <p class="text-xs text-slate-400">Customer Satisfaction Index comparison (Target: &gt;85%)</p>
-                    </div>
-                </div>
-                <div class="relative flex-1 min-h-[260px]">
-                    <canvas id="chart-csat-agency"></canvas>
-                </div>
-            </div>
-
-        </section>
-
-    </main>
-
-    <script>
-        /**
-         * GLOBAL DATA MODEL & DASHBOARD STATE
-         */
-        let rawDataset = [];
-        let filteredDataset = [];
-        let currentGranularity = 'daily'; // 'daily' | 'weekly' | 'monthly'
-
-        // Active Global Filter Values
-        let activeFilters = {
-            agency: 'ALL',
-            menu: 'ALL',
-            vip: 'ALL',
-            agent: 'ALL'
-        };
-
-        // Chart Instance References for dynamic destroyed/rebuilt updates
-        let chartInstances = {};
-
-        // Benchmark Targets
-        const BENCHMARKS = {
-            ticketCreation: 10.0, // < 10%
-            frt: 90,             // < 90 seconds
-            furt: 17.5,           // < 17.5 mins
-            csat: 85.0           // > 85%
-        };
-
-        /**
-         * INITIALIZATION ON PAGE LOAD
-         */
-        window.addEventListener('DOMContentLoaded', () => {
-            generateMockWorkbookData();
-            populateFilterDropdowns();
-            applyFilters();
+            // Extract date
+            const dateStr = record['Case Creation Time'] || record['Survey Response Date'] || record['Case Assigned Time (Case) (DateTime)'];
+            if (dateStr) {
+              const parsedDate = new Date(dateStr);
+              if (!isNaN(parsedDate.getTime())) {
+                record.date = parsedDate.toISOString().split('T')[0];
+                record.sheet = sheetName;
+                records.push(record);
+              }
+            }
+          }
         });
 
-        /**
-         * Generate Data modeled on 25082026.xlsx sheets
-         */
-        function generateMockWorkbookData() {
-            const agencies = ['Concentrix', 'Radical Minds', 'Tech Mahindra', 'Aegis', 'In-House CX'];
-            const menus = [
-                { menu: 'Orders & Delivery', sub: 'Delay in Delivery' },
-                { menu: 'Refund & Payment', sub: 'Refund Pending' },
-                { menu: 'Account & Profile', sub: 'OTP Issues' },
-                { menu: 'Technical Issue', sub: 'App Crash' },
-                { menu: 'VIP Escalation', sub: 'Priority Resolution' },
-                { menu: 'Product Inquiry', sub: 'Specifications' }
-            ];
-            const agents = [
-                { name: 'Aarav Sharma', agency: 'Concentrix' },
-                { name: 'Priya Patel', agency: 'Concentrix' },
-                { name: 'Rahul Verma', agency: 'Radical Minds' },
-                { name: 'Sneha Gupta', agency: 'Radical Minds' },
-                { name: 'Vikram Singh', agency: 'Tech Mahindra' },
-                { name: 'Ananya Roy', agency: 'Tech Mahindra' },
-                { name: 'Rohan Mehta', agency: 'Aegis' },
-                { name: 'Neha Joshi', agency: 'Aegis' },
-                { name: 'Karan Malhotra', agency: 'In-House CX' },
-                { name: 'Pooja Nair', agency: 'In-House CX' }
-            ];
+        if (records.length > 0) {
+          await saveRecordsToDB(records);
+        }
+      }
+      refreshDashboard();
+      alert('File processed and stored successfully!');
+    }
 
-            const startDate = new Date('2026-08-01');
-            const records = [];
+    // --- Database Helper Functions ---
+    function saveRecordsToDB(records) {
+      return new Promise((resolve) => {
+        const tx = db.transaction("records", "readwrite");
+        const store = tx.objectStore("records");
+        records.forEach(r => store.add(r));
+        tx.oncomplete = () => resolve();
+      });
+    }
 
-            for (let i = 0; i < 450; i++) {
-                const dateOffset = Math.floor(Math.random() * 25); // 25 days range
-                const caseDate = new Date(startDate);
-                caseDate.setDate(startDate.getDate() + dateOffset);
-                const hour = Math.floor(Math.random() * 12) + 9; // 9 AM to 9 PM
-                caseDate.setHours(hour, Math.floor(Math.random() * 60));
+    function getAllRecords() {
+      return new Promise((resolve) => {
+        if (!db) return resolve([]);
+        const tx = db.transaction("records", "readonly");
+        const store = tx.objectStore("records");
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
 
-                const agentObj = agents[Math.floor(Math.random() * agents.length)];
-                const menuObj = menus[Math.floor(Math.random() * menus.length)];
-                const isVip = Math.random() < 0.18 ? 'Yes' : 'No';
+    async function deleteDateData(dateStr) {
+      if (!confirm(`Are you sure you want to delete all data for ${dateStr}?`)) return;
+      const tx = db.transaction("records", "readwrite");
+      const store = tx.objectStore("records");
+      const index = store.index("date");
+      const req = index.openCursor(IDBKeyRange.only(dateStr));
+      
+      req.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor) {
+          store.delete(cursor.primaryKey);
+          cursor.continue();
+        }
+      };
+      
+      tx.oncomplete = () => {
+        populateDataModal();
+        refreshDashboard();
+      };
+    }
 
-                // Core measures based on prompt formulas
-                const caseCount = 1; // Base case unit
-                const createdTicket = Math.random() < (isVip === 'Yes' ? 0.06 : 0.09) ? 1 : 0; // ~8-9% ticket rate
+    async function clearAllData() {
+      if (!confirm("Are you sure you want to delete ALL stored database records?")) return;
+      const tx = db.transaction("records", "readwrite");
+      tx.objectStore("records").clear();
+      tx.oncomplete = () => {
+        populateDataModal();
+        refreshDashboard();
+      };
+    }
 
-                // FRT in seconds (target < 90s)
-                let frtVal = Math.floor(60 + Math.random() * 55); 
-                if (agentObj.agency === 'Radical Minds') frtVal += 15;
+    // --- Dashboard Aggregation & Render Engine ---
+    let charts = {};
 
-                // FuRT in minutes (target < 17.5m)
-                let furtVal = parseFloat((10 + Math.random() * 12).toFixed(1));
-                if (menuObj.menu === 'VIP Escalation') furtVal = parseFloat((8 + Math.random() * 6).toFixed(1));
+    async function refreshDashboard() {
+      const records = await getAllRecords();
 
-                // CSAT
-                const isResolvedSatisfaction = Math.random() < (isVip === 'Yes' ? 0.92 : 0.86) ? 'Yes' : 'No';
-                const understoodIssue = Math.random() < 0.88 ? 'Yes' : 'No';
+      let totalVolume = 0;
+      let totalTickets = 0;
+      let frtSum = 0, frtCount = 0;
+      let furtSum = 0, furtCount = 0;
+      let csatYes = 0, csatTotal = 0;
 
-                records.push({
-                    caseId: `CAS-2026-${10000 + i}`,
-                    creationTime: caseDate,
-                    agency: agentObj.agency,
-                    liveChatMenu: menuObj.menu,
-                    liveChatSubMenu: menuObj.sub,
-                    vipUser: isVip,
-                    agentName: agentObj.name,
-                    caseCount: caseCount,
-                    noOfTicketsCreated: createdTicket,
-                    frtSec: frtVal,
-                    furtMin: furtVal,
-                    csatResolved: isResolvedSatisfaction,
-                    csatUnderstood: understoodIssue,
-                    surveyCount: 1
-                });
-            }
+      const groupedData = {};
+      const categoryData = {};
 
-            rawDataset = records;
+      records.forEach(r => {
+        let groupKey = r.date;
+        if (currentGranularity === 'monthly' && r.date) groupKey = r.date.substring(0, 7);
+        
+        if (r.date && !groupedData[groupKey]) {
+          groupedData[groupKey] = { volume: 0, tickets: 0, frtSum: 0, frtCnt: 0, furtSum: 0, furtCnt: 0 };
         }
 
-        /**
-         * Handle user uploaded Excel file (25082026.xlsx)
-         */
-        function handleExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    let parsedRecords = [];
-
-                    // Try parsing primary sheets or fallback to first sheet
-                    const sheetNames = workbook.SheetNames;
-                    const primarySheet = workbook.Sheets['Volume Trend'] || workbook.Sheets[sheetNames[0]];
-                    const jsonRows = XLSX.utils.sheet_to_json(primarySheet);
-
-                    jsonRows.forEach((row, idx) => {
-                        parsedRecords.push({
-                            caseId: row['Case Number'] || row['Case Id'] || `CAS-XLS-${idx}`,
-                            creationTime: row['Case Creation Time'] ? new Date(row['Case Creation Time']) : new Date(),
-                            agency: row['Agency'] || row['Case First Assignee Agency'] || 'Concentrix',
-                            liveChatMenu: row['LiveChat Menu'] || row['WF_Query Type'] || 'General Query',
-                            liveChatSubMenu: row['LiveChat Sub Menu'] || 'General',
-                            vipUser: row['VIP User'] || 'No',
-                            agentName: row['Case Handled By'] || row['Agent'] || 'Agent ' + (idx % 10),
-                            caseCount: parseFloat(row['Case Count']) || 1,
-                            noOfTicketsCreated: parseFloat(row['No of ticket created']) || 0,
-                            frtSec: parseFloat(row['CX FRT w/o Bot Time - V1']) || Math.floor(50 + Math.random() * 50),
-                            furtMin: parseFloat(row['Total Assignment Duration']) || parseFloat((12 + Math.random() * 8).toFixed(1)),
-                            csatResolved: row['Was your issue resolved to your satisfaction?'] === 'Yes' ? 'Yes' : 'No',
-                            csatUnderstood: 'Yes',
-                            surveyCount: 1
-                        });
-                    });
-
-                    if (parsedRecords.length > 0) {
-                        rawDataset = parsedRecords;
-                        document.getElementById('data-status-badge').innerHTML = 
-                            `<i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i> Loaded Custom Excel (${parsedRecords.length} rows)`;
-                        populateFilterDropdowns();
-                        applyFilters();
-                    }
-                } catch (err) {
-                    alert('Error parsing uploaded Excel file. Reverting to default workbook structure.');
-                    console.error(err);
-                }
-            };
-            reader.readAsArrayBuffer(file);
+        // 1. Volume & Tickets
+        const count = parseFloat(r['Case Count (SUM)']) || 0;
+        const tickets = parseFloat(r['No of ticket created (SUM)']) || 0;
+        if (count) {
+          totalVolume += count;
+          totalTickets += tickets;
+          if (groupedData[groupKey]) {
+            groupedData[groupKey].volume += count;
+            groupedData[groupKey].tickets += tickets;
+          }
         }
 
-        /**
-         * Populate Dynamic Filters from Dataset
-         */
-        function populateFilterDropdowns() {
-            const agencySelect = document.getElementById('filter-agency');
-            const menuSelect = document.getElementById('filter-menu');
-            const agentSelect = document.getElementById('filter-agent');
-
-            const agencies = [...new Set(rawDataset.map(d => d.agency))].sort();
-            const menus = [...new Set(rawDataset.map(d => d.liveChatMenu))].sort();
-            const agents = [...new Set(rawDataset.map(d => d.agentName))].sort();
-
-            agencySelect.innerHTML = '<option value="ALL">All Agencies</option>' + 
-                agencies.map(a => `<option value="${a}">${a}</option>`).join('');
-
-            menuSelect.innerHTML = '<option value="ALL">All Categories</option>' + 
-                menus.map(m => `<option value="${m}">${m}</option>`).join('');
-
-            agentSelect.innerHTML = '<option value="ALL">All Agents</option>' + 
-                agents.map(ag => `<option value="${ag}">${ag}</option>`).join('');
+        // Category Aggregation
+        const menu = r['LiveChat Menu (Case)'] || r['WF_Query Type (Case)'];
+        if (menu && count) {
+          categoryData[menu] = (categoryData[menu] || 0) + count;
         }
 
-        /**
-         * Granularity Switcher Handler
-         */
-        function setTimeGranularity(granularity) {
-            currentGranularity = granularity;
-            ['daily', 'weekly', 'monthly'].forEach(g => {
-                const btn = document.getElementById(`btn-gran-${g}`);
-                if (g === granularity) {
-                    btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg pill-active transition-all';
-                } else {
-                    btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg pill-inactive transition-all';
-                }
-            });
-            renderAllVisuals();
+        // 2. FRT Parse
+        if (r['CX FRT w/o Bot Time - V1 (SUM)'] || r['CX FRT w/o Bot Time - V1 (AVG)']) {
+          const frtVal = parseTimeToSeconds(r['CX FRT w/o Bot Time - V1 (SUM)'] || r['CX FRT w/o Bot Time - V1 (AVG)']);
+          if (frtVal > 0) {
+            frtSum += frtVal; frtCount++;
+            if (groupedData[groupKey]) { groupedData[groupKey].frtSum += frtVal; groupedData[groupKey].frtCnt++; }
+          }
         }
 
-        /**
-         * Apply Active Global Filters
-         */
-        function applyFilters() {
-            activeFilters.agency = document.getElementById('filter-agency').value;
-            activeFilters.menu = document.getElementById('filter-menu').value;
-            activeFilters.vip = document.getElementById('filter-vip').value;
-            activeFilters.agent = document.getElementById('filter-agent').value;
-
-            filteredDataset = rawDataset.filter(item => {
-                if (activeFilters.agency !== 'ALL' && item.agency !== activeFilters.agency) return false;
-                if (activeFilters.menu !== 'ALL' && item.liveChatMenu !== activeFilters.menu) return false;
-                if (activeFilters.vip !== 'ALL' && item.vipUser !== activeFilters.vip) return false;
-                if (activeFilters.agent !== 'ALL' && item.agentName !== activeFilters.agent) return false;
-                return true;
-            });
-
-            // Update Active Summary Text
-            const summaryText = [];
-            if (activeFilters.agency !== 'ALL') summaryText.push(`Agency: ${activeFilters.agency}`);
-            if (activeFilters.menu !== 'ALL') summaryText.push(`Menu: ${activeFilters.menu}`);
-            if (activeFilters.vip !== 'ALL') summaryText.push(`VIP: ${activeFilters.vip}`);
-            if (activeFilters.agent !== 'ALL') summaryText.push(`Agent: ${activeFilters.agent}`);
-
-            const activeSummaryEl = document.getElementById('active-filter-summary');
-            if (summaryText.length === 0) {
-                activeSummaryEl.innerHTML = `<span class="text-sky-400 font-semibold">Active:</span> Showing all records (${filteredDataset.length})`;
-            } else {
-                activeSummaryEl.innerHTML = `<span class="text-sky-400 font-semibold">Filtered:</span> ${summaryText.join(' | ')} (${filteredDataset.length} rows)`;
-            }
-
-            renderAllVisuals();
+        // 3. FuRT Parse
+        if (r['CX FuRT w/o Bot Time - LiveChat (SUM)'] || r['Total Assignment Duration (AVG)']) {
+          const furtVal = parseTimeToSeconds(r['CX FuRT w/o Bot Time - LiveChat (SUM)'] || r['Total Assignment Duration (AVG)']);
+          if (furtVal > 0) {
+            furtSum += furtVal; furtCount++;
+            if (groupedData[groupKey]) { groupedData[groupKey].furtSum += furtVal; groupedData[groupKey].furtCnt++; }
+          }
         }
 
-        /**
-         * Reset All Global Filters
-         */
-        function resetAllFilters() {
-            document.getElementById('filter-agency').value = 'ALL';
-            document.getElementById('filter-menu').value = 'ALL';
-            document.getElementById('filter-vip').value = 'ALL';
-            document.getElementById('filter-agent').value = 'ALL';
-            applyFilters();
+        // 4. CSAT
+        const satisfaction = r['Was your issue resolved to your satisfaction?'] || r['Was the representative able to understand the issue and take needful actions?'];
+        if (satisfaction) {
+          csatTotal++;
+          if (String(satisfaction).toLowerCase().includes('yes')) csatYes++;
         }
+      });
 
-        /**
-         * Master Render Function
-         */
-        function renderAllVisuals() {
-            updateKPICards();
-            renderVolumeTrendChart();
-            renderMenuBreakdownChart();
-            renderFrtFurtTrendChart();
-            renderAgentTable();
-            renderCsatDonutChart();
-            renderCsatAgencyChart();
-        }
+      // Update KPI UI
+      const ticketPct = totalVolume ? ((totalTickets / totalVolume) * 100).toFixed(1) : "0.0";
+      const avgFRT = frtCount ? (frtSum / frtCount).toFixed(0) : "0";
+      const avgFuRT = furtCount ? ((furtSum / furtCount) / 60).toFixed(1) : "0.0";
+      const csatPct = csatTotal ? ((csatYes / csatTotal) * 100).toFixed(1) : "0.0";
 
-        /**
-         * DAX Calculation Logic for KPI Cards
-         */
-        function updateKPICards() {
-            const totalCases = filteredDataset.reduce((sum, d) => sum + d.caseCount, 0);
-            const totalTickets = filteredDataset.reduce((sum, d) => sum + d.noOfTicketsCreated, 0);
-            const ticketPercent = totalCases > 0 ? (totalTickets / totalCases) * 100 : 0;
+      document.getElementById('kpiVolume').innerText = totalVolume.toLocaleString();
+      document.getElementById('kpiTicketPct').innerText = `${ticketPct}%`;
+      document.getElementById('kpiFRT').innerText = `${avgFRT}s`;
+      document.getElementById('kpiFuRT').innerText = `${avgFuRT}m`;
+      document.getElementById('kpiCSAT').innerText = `${csatPct}%`;
 
-            const avgFrt = totalCases > 0 ? (filteredDataset.reduce((sum, d) => sum + d.frtSec, 0) / totalCases) : 0;
-            const avgFurt = totalCases > 0 ? (filteredDataset.reduce((sum, d) => sum + d.furtMin, 0) / totalCases) : 0;
+      // KPI Target Colors
+      document.getElementById('kpiTicketPct').className = `text-2xl font-bold mt-2 ${parseFloat(ticketPct) <= 10 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('kpiFRT').className = `text-2xl font-bold mt-2 ${parseFloat(avgFRT) <= 90 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('kpiFuRT').className = `text-2xl font-bold mt-2 ${parseFloat(avgFuRT) <= 17.5 ? 'text-emerald-400' : 'text-rose-400'}`;
+      document.getElementById('kpiCSAT').className = `text-2xl font-bold mt-2 ${parseFloat(csatPct) >= 85 ? 'text-emerald-400' : 'text-rose-400'}`;
 
-            const csatYesCount = filteredDataset.filter(d => d.csatResolved === 'Yes').length;
-            const csatTotalSurveys = filteredDataset.length;
-            const csatPercent = csatTotalSurveys > 0 ? (csatYesCount / csatTotalSurveys) * 100 : 0;
+      // Render Charts
+      renderCharts(groupedData, categoryData, csatYes, csatTotal - csatYes);
+    }
 
-            // 1. Total Volume
-            document.getElementById('kpi-volume-val').innerText = totalCases.toLocaleString();
-            document.getElementById('kpi-volume-diff').innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> +${(Math.random() * 4 + 1).toFixed(1)}%`;
+    function renderCharts(groupedData, categoryData, csatYes, csatNo) {
+      const labels = Object.keys(groupedData).sort();
+      const volumes = labels.map(l => groupedData[l].volume);
+      const ticketPcts = labels.map(l => groupedData[l].volume ? ((groupedData[l].tickets / groupedData[l].volume) * 100).toFixed(1) : 0);
+      const frts = labels.map(l => groupedData[l].frtCnt ? (groupedData[l].frtSum / groupedData[l].frtCnt).toFixed(0) : 0);
+      const furts = labels.map(l => groupedData[l].furtCnt ? ((groupedData[l].furtSum / groupedData[l].furtCnt) / 60).toFixed(1) : 0);
 
-            // 2. Ticket Creation %
-            document.getElementById('kpi-ticket-val').innerText = ticketPercent.toFixed(1) + '%';
-            document.getElementById('kpi-ticket-created-count').innerText = `${totalTickets} Tickets`;
-            const ticketBadge = document.getElementById('kpi-ticket-badge');
-            const ticketIcon = document.getElementById('kpi-ticket-status-icon');
-            if (ticketPercent <= BENCHMARKS.ticketCreation) {
-                ticketBadge.className = 'px-2 py-0.5 rounded-full font-semibold text-[10px] metric-badge-green';
-                ticketBadge.innerText = 'Target Met (≤10%)';
-                ticketIcon.className = 'p-1.5 rounded-lg text-xs bg-emerald-500/10 text-emerald-400';
-            } else {
-                ticketBadge.className = 'px-2 py-0.5 rounded-full font-semibold text-[10px] metric-badge-red';
-                ticketBadge.innerText = 'Over Target (>10%)';
-                ticketIcon.className = 'p-1.5 rounded-lg text-xs bg-rose-500/10 text-rose-400';
-            }
+      // Volume & Ticket Chart
+      if (charts.volume) charts.volume.destroy();
+      charts.volume = new Chart(document.getElementById('volumeChart'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Handled Volume', data: volumes, backgroundColor: '#0ea5e9', yAxisID: 'y' },
+            { label: 'Ticket Creation %', data: ticketPcts, type: 'line', borderColor: '#f59e0b', yAxisID: 'y1' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left' }, y1: { position: 'right', grid: { drawOnChartArea: false } } } }
+      });
 
-            // 3. Avg FRT
-            document.getElementById('kpi-frt-val').innerText = `${Math.round(avgFrt)}s`;
-            const frtSlaMet = filteredDataset.filter(d => d.frtSec <= BENCHMARKS.frt).length;
-            const frtSlaPct = totalCases > 0 ? ((frtSlaMet / totalCases) * 100).toFixed(0) : 0;
-            document.getElementById('kpi-frt-sla').innerText = `SLA: ${frtSlaPct}% Compliant`;
+      // SLA Chart
+      if (charts.sla) charts.sla.destroy();
+      charts.sla = new Chart(document.getElementById('slaChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Avg FRT (sec)', data: frts, borderColor: '#38bdf8', fill: false },
+            { label: 'Avg FuRT (min)', data: furts, borderColor: '#a855f7', fill: false }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
 
-            // 4. Avg FuRT
-            document.getElementById('kpi-furt-val').innerText = `${avgFurt.toFixed(1)}m`;
-            const furtBreached = filteredDataset.filter(d => d.furtMin > BENCHMARKS.furt).length;
-            document.getElementById('kpi-furt-breach').innerText = `${furtBreached} Breached SLA`;
+      // CSAT Donut Chart
+      if (charts.csat) charts.csat.destroy();
+      charts.csat = new Chart(document.getElementById('csatChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Satisfied (Yes)', 'Dissatisfied (No)'],
+          datasets: [{ data: [csatYes, csatNo], backgroundColor: ['#10b981', '#ef4444'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
 
-            // 5. CSAT
-            document.getElementById('kpi-csat-val').innerText = `${csatPercent.toFixed(1)}%`;
-            document.getElementById('kpi-csat-count').innerText = `${csatTotalSurveys} Responses`;
-        }
+      // Category Chart
+      if (charts.category) charts.category.destroy();
+      const catLabels = Object.keys(categoryData).slice(0, 7);
+      charts.category = new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+          labels: catLabels,
+          datasets: [{ label: 'Volume', data: catLabels.map(c => categoryData[c]), backgroundColor: '#6366f1' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+      });
+    }
 
-        /**
-         * Group Data by Dynamic Time Bucket
-         */
-        function getGroupedByTime() {
-            const timeMap = {};
+    // Modal & Stored Data Manager
+    async function toggleDataModal() {
+      const modal = document.getElementById('dataModal');
+      modal.classList.toggle('hidden');
+      if (!modal.classList.contains('hidden')) {
+        await populateDataModal();
+      }
+    }
 
-            filteredDataset.forEach(item => {
-                const dateObj = new Date(item.creationTime);
-                let timeKey = '';
+    async function populateDataModal() {
+      const records = await getAllRecords();
+      const dateCounts = {};
+      records.forEach(r => { if (r.date) dateCounts[r.date] = (dateCounts[r.date] || 0) + 1; });
 
-                if (currentGranularity === 'daily') {
-                    timeKey = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                } else if (currentGranularity === 'weekly') {
-                    // Week Number calculation
-                    const firstDayOfYear = new Date(dateObj.getFullYear(), 0, 1);
-                    const pastDaysOfYear = (dateObj - firstDayOfYear) / 86400000;
-                    const weekNum = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-                    timeKey = `Wk ${weekNum}`;
-                } else {
-                    timeKey = dateObj.toLocaleDateString('en-US', { month: 'short', year: '2026' });
-                }
+      const tbody = document.getElementById('daysTableBody');
+      tbody.innerHTML = '';
 
-                if (!timeMap[timeKey]) {
-                    timeMap[timeKey] = {
-                        key: timeKey,
-                        volume: 0,
-                        tickets: 0,
-                        frtSum: 0,
-                        furtSum: 0,
-                        csatYes: 0,
-                        totalSurveys: 0,
-                        dateRaw: dateObj
-                    };
-                }
+      Object.keys(dateCounts).sort().reverse().forEach(date => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2">${date}</td>
+          <td class="p-2">${dateCounts[date]} records</td>
+          <td class="p-2 text-right">
+            <button onclick="deleteDateData('${date}')" class="text-rose-400 hover:text-rose-300 font-medium">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
 
-                timeMap[timeKey].volume += item.caseCount;
-                timeMap[timeKey].tickets += item.noOfTicketsCreated;
-                timeMap[timeKey].frtSum += item.frtSec;
-                timeMap[timeKey].furtSum += item.furtMin;
-                if (item.csatResolved === 'Yes') timeMap[timeKey].csatYes += 1;
-                timeMap[timeKey].totalSurveys += 1;
-            });
-
-            // Return sorted chronologically
-            return Object.values(timeMap).sort((a, b) => a.dateRaw - b.dateRaw);
-        }
-
-        /**
-         * VISUAL 1: Combo Chart - Handled Volume & Ticket Creation %
-         */
-        function renderVolumeTrendChart() {
-            const grouped = getGroupedByTime();
-            const labels = grouped.map(g => g.key);
-            const volumeData = grouped.map(g => g.volume);
-            const ticketPctData = grouped.map(g => g.volume > 0 ? ((g.tickets / g.volume) * 100).toFixed(1) : 0);
-
-            const ctx = document.getElementById('chart-volume-trend').getContext('2d');
-            if (chartInstances.volumeTrend) chartInstances.volumeTrend.destroy();
-
-            chartInstances.volumeTrend = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            type: 'line',
-                            label: 'Ticket Creation %',
-                            data: ticketPctData,
-                            borderColor: '#F59E0B',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderWidth: 2.5,
-                            tension: 0.3,
-                            yAxisID: 'yTicket',
-                            pointRadius: 4,
-                            pointBackgroundColor: '#F59E0B'
-                        },
-                        {
-                            type: 'bar',
-                            label: 'Handled Cases',
-                            data: volumeData,
-                            backgroundColor: 'rgba(14, 165, 233, 0.75)',
-                            hoverBackgroundColor: 'rgba(14, 165, 233, 0.95)',
-                            borderRadius: 6,
-                            yAxisID: 'yVolume'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onClick: (e, elements) => {
-                        if (elements.length > 0) {
-                            const index = elements[0].index;
-                            const clickedLabel = labels[index];
-                            // Dynamic Cross-filtering interaction
-                        }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#94A3B8', font: { size: 11 } } },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: '#1E293B',
-                            titleColor: '#F8FAFC',
-                            bodyColor: '#CBD5E1',
-                            borderColor: '#334155',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } },
-                        yVolume: {
-                            type: 'linear',
-                            position: 'left',
-                            title: { display: true, text: 'Cases', color: '#0EA5E9', font: { size: 10 } },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94A3B8', font: { size: 10 } }
-                        },
-                        yTicket: {
-                            type: 'linear',
-                            position: 'right',
-                            title: { display: true, text: 'Ticket %', color: '#F59E0B', font: { size: 10 } },
-                            grid: { drawOnChartArea: false },
-                            ticks: { color: '#94A3B8', font: { size: 10 }, callback: v => v + '%' }
-                        }
-                    }
-                }
-            });
-        }
-
-        /**
-         * VISUAL 2: Bar Chart - Handled Volume by LiveChat Menu
-         */
-        function renderMenuBreakdownChart() {
-            const menuMap = {};
-            filteredDataset.forEach(d => {
-                if (!menuMap[d.liveChatMenu]) {
-                    menuMap[d.liveChatMenu] = { cases: 0, tickets: 0 };
-                }
-                menuMap[d.liveChatMenu].cases += d.caseCount;
-                menuMap[d.liveChatMenu].tickets += d.noOfTicketsCreated;
-            });
-
-            const labels = Object.keys(menuMap);
-            const caseData = labels.map(l => menuMap[l].cases);
-            const ticketData = labels.map(l => menuMap[l].tickets);
-
-            const ctx = document.getElementById('chart-menu-breakdown').getContext('2d');
-            if (chartInstances.menuBreakdown) chartInstances.menuBreakdown.destroy();
-
-            chartInstances.menuBreakdown = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Handled Cases',
-                            data: caseData,
-                            backgroundColor: '#0EA5E9',
-                            borderRadius: 4
-                        },
-                        {
-                            label: 'Created Tickets',
-                            data: ticketData,
-                            backgroundColor: '#EF4444',
-                            borderRadius: 4
-                        }
-                    ]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#94A3B8', font: { size: 11 } } },
-                        tooltip: { backgroundColor: '#1E293B', titleColor: '#F8FAFC', bodyColor: '#CBD5E1' }
-                    },
-                    scales: {
-                        x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94A3B8', font: { size: 10 } } },
-                        y: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        /**
-         * VISUAL 3: Dual-Axis Line Chart - Avg FRT vs Avg FuRT
-         */
-        function renderFrtFurtTrendChart() {
-            const grouped = getGroupedByTime();
-            const labels = grouped.map(g => g.key);
-            const frtData = grouped.map(g => g.volume > 0 ? Math.round(g.frtSum / g.volume) : 0);
-            const furtData = grouped.map(g => g.volume > 0 ? parseFloat((g.furtSum / g.volume).toFixed(1)) : 0);
-
-            const ctx = document.getElementById('chart-frt-furt-trend').getContext('2d');
-            if (chartInstances.frtFurtTrend) chartInstances.frtFurtTrend.destroy();
-
-            chartInstances.frtFurtTrend = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Avg FRT (sec)',
-                            data: frtData,
-                            borderColor: '#F59E0B',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            yAxisID: 'yFRT',
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Avg FuRT (min)',
-                            data: furtData,
-                            borderColor: '#A855F7',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            yAxisID: 'yFuRT',
-                            tension: 0.3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#94A3B8', font: { size: 11 } } },
-                        tooltip: { backgroundColor: '#1E293B' }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } },
-                        yFRT: {
-                            type: 'linear',
-                            position: 'left',
-                            title: { display: true, text: 'FRT (Sec)', color: '#F59E0B', font: { size: 10 } },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94A3B8', font: { size: 10 } }
-                        },
-                        yFuRT: {
-                            type: 'linear',
-                            position: 'right',
-                            title: { display: true, text: 'FuRT (Min)', color: '#A855F7', font: { size: 10 } },
-                            grid: { drawOnChartArea: false },
-                            ticks: { color: '#94A3B8', font: { size: 10 } }
-                        }
-                    }
-                }
-            });
-        }
-
-        /**
-         * VISUAL 4: Agent & Agency Performance Matrix Table
-         */
-        function renderAgentTable() {
-            const searchVal = (document.getElementById('table-search')?.value || '').toLowerCase();
-            const agentMap = {};
-
-            filteredDataset.forEach(d => {
-                if (!agentMap[d.agentName]) {
-                    agentMap[d.agentName] = {
-                        name: d.agentName,
-                        agency: d.agency,
-                        cases: 0,
-                        frtSum: 0,
-                        furtSum: 0,
-                        csatYes: 0,
-                        csatTotal: 0
-                    };
-                }
-                agentMap[d.agentName].cases += d.caseCount;
-                agentMap[d.agentName].frtSum += d.frtSec;
-                agentMap[d.agentName].furtSum += d.furtMin;
-                if (d.csatResolved === 'Yes') agentMap[d.agentName].csatYes += 1;
-                agentMap[d.agentName].csatTotal += 1;
-            });
-
-            let agentsList = Object.values(agentMap);
-            if (searchVal) {
-                agentsList = agentsList.filter(a => 
-                    a.name.toLowerCase().includes(searchVal) || 
-                    a.agency.toLowerCase().includes(searchVal)
-                );
-            }
-
-            const tbody = document.getElementById('agent-matrix-body');
-            tbody.innerHTML = agentsList.map(a => {
-                const avgFrt = Math.round(a.frtSum / a.cases);
-                const avgFurt = (a.furtSum / a.cases).toFixed(1);
-                const csatPct = ((a.csatYes / a.csatTotal) * 100).toFixed(0);
-
-                let statusBadge = '';
-                if (avgFrt <= BENCHMARKS.frt && avgFurt <= BENCHMARKS.furt && csatPct >= BENCHMARKS.csat) {
-                    statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] metric-badge-green font-semibold">Exceeding SLA</span>';
-                } else if (avgFrt > BENCHMARKS.frt || avgFurt > BENCHMARKS.furt) {
-                    statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] metric-badge-amber font-semibold">SLA At Risk</span>';
-                } else {
-                    statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] metric-badge-red font-semibold">Needs Coaching</span>';
-                }
-
-                return `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-3 font-semibold text-white flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full bg-slate-700 text-sky-400 flex items-center justify-center text-[10px] font-bold">
-                                ${a.name.split(' ').map(n=>n[0]).join('')}
-                            </div>
-                            ${a.name}
-                        </td>
-                        <td class="p-3 text-slate-400">${a.agency}</td>
-                        <td class="p-3 text-right font-medium text-white">${a.cases}</td>
-                        <td class="p-3 text-right font-medium ${avgFrt <= BENCHMARKS.frt ? 'text-emerald-400' : 'text-rose-400'}">${avgFrt}s</td>
-                        <td class="p-3 text-right font-medium ${avgFurt <= BENCHMARKS.furt ? 'text-emerald-400' : 'text-amber-400'}">${avgFurt}m</td>
-                        <td class="p-3 text-right font-medium ${csatPct >= BENCHMARKS.csat ? 'text-emerald-400' : 'text-rose-400'}">${csatPct}%</td>
-                        <td class="p-3 text-center">${statusBadge}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        /**
-         * VISUAL 5: CSAT Response Breakdown (Donut Chart)
-         */
-        function renderCsatDonutChart() {
-            const yesCount = filteredDataset.filter(d => d.csatResolved === 'Yes').length;
-            const noCount = filteredDataset.filter(d => d.csatResolved === 'No').length;
-
-            const ctx = document.getElementById('chart-csat-donut').getContext('2d');
-            if (chartInstances.csatDonut) chartInstances.csatDonut.destroy();
-
-            chartInstances.csatDonut = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Resolved to Satisfaction (Yes)', 'Unresolved / Dissatisfied (No)'],
-                    datasets: [{
-                        data: [yesCount, noCount],
-                        backgroundColor: ['#10B981', '#EF4444'],
-                        borderWidth: 0,
-                        hoverOffset: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 11 }, padding: 15 } },
-                        tooltip: { backgroundColor: '#1E293B' }
-                    },
-                    cutout: '68%'
-                }
-            });
-        }
-
-        /**
-         * VISUAL 6: CSAT % Aggregated by Agency & Category
-         */
-        function renderCsatAgencyChart() {
-            const agencyMap = {};
-            filteredDataset.forEach(d => {
-                if (!agencyMap[d.agency]) {
-                    agencyMap[d.agency] = { csatYes: 0, csatTotal: 0 };
-                }
-                if (d.csatResolved === 'Yes') agencyMap[d.agency].csatYes += 1;
-                agencyMap[d.agency].csatTotal += 1;
-            });
-
-            const labels = Object.keys(agencyMap);
-            const csatData = labels.map(l => {
-                const total = agencyMap[l].csatTotal;
-                return total > 0 ? parseFloat(((agencyMap[l].csatYes / total) * 100).toFixed(1)) : 0;
-            });
-
-            const ctx = document.getElementById('chart-csat-agency').getContext('2d');
-            if (chartInstances.csatAgency) chartInstances.csatAgency.destroy();
-
-            chartInstances.csatAgency = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'CSAT %',
-                        data: csatData,
-                        backgroundColor: csatData.map(v => v >= BENCHMARKS.csat ? '#10B981' : '#F59E0B'),
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { backgroundColor: '#1E293B', callbacks: { label: ctx => `CSAT: ${ctx.parsed.y}%` } }
-                    },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } },
-                        y: {
-                            min: 0,
-                            max: 100,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94A3B8', font: { size: 10 }, callback: v => v + '%' }
-                        }
-                    }
-                }
-            });
-        }
-
-        /**
-         * Export Executive Summary
-         */
-        function exportDashboardSummary() {
-            const totalCases = filteredDataset.reduce((sum, d) => sum + d.caseCount, 0);
-            const totalTickets = filteredDataset.reduce((sum, d) => sum + d.noOfTicketsCreated, 0);
-            const ticketPercent = totalCases > 0 ? ((totalTickets / totalCases) * 100).toFixed(2) : '0';
-            const avgFrt = totalCases > 0 ? Math.round(filteredDataset.reduce((sum, d) => sum + d.frtSec, 0) / totalCases) : 0;
-            const avgFurt = totalCases > 0 ? (filteredDataset.reduce((sum, d) => sum + d.furtMin, 0) / totalCases).toFixed(2) : 0;
-            const csatYes = filteredDataset.filter(d => d.csatResolved === 'Yes').length;
-            const csatPct = filteredDataset.length > 0 ? ((csatYes / filteredDataset.length) * 100).toFixed(2) : '0';
-
-            const csvContent = "data:text/csv;charset=utf-8," + 
-                "Metric,Value,Target / Benchmark,Status\n" +
-                `Total Handled Volume,${totalCases},N/A,Active\n` +
-                `Ticket Creation %,${ticketPercent}%,<10%,${ticketPercent <= 10 ? 'Met' : 'Breached'}\n` +
-                `Average FRT,${avgFrt} sec,<90 sec,${avgFrt <= 90 ? 'Met' : 'Breached'}\n` +
-                `Average FuRT,${avgFurt} min,<17.5 min,${avgFurt <= 17.5 ? 'Met' : 'Breached'}\n` +
-                `CSAT Score,${csatPct}%,>85%,${csatPct >= 85 ? 'Met' : 'Breached'}\n`;
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `CX_Operations_BI_Summary_${currentGranularity}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    </script>
+    // Utility: Parse time HH:MM:SS to seconds
+    function parseTimeToSeconds(timeStr) {
+      if (!timeStr) return 0;
+      if (typeof timeStr === 'number') return timeStr;
+      const parts = String(timeStr).split(':');
+      if (parts.length === 3) {
+        return (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parseFloat(parts[2]));
+      }
+      return 0;
+    }
+  </script>
 </body>
 </html>
